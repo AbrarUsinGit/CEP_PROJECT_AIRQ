@@ -20,7 +20,27 @@ def subscribe(request):
         if not email or not city:
             return JsonResponse({'status': 'error', 'message': 'Email and city are required'})
         
-        Subscription.objects.get_or_create(email=email, city=city)
+        created, _ = Subscription.objects.get_or_create(email=email, city=city)
+        
+        if created:
+            # Send welcome email
+            from django.core.mail import send_mail
+            from django.conf import settings
+            
+            subject = f"Welcome to AQI Alerts for {city}!"
+            message = f"Hi there,\n\nYou have successfully subscribed to air quality alerts for {city}.\n\nYou will receive daily updates on the air quality in your area.\n\nStay healthy!\nAQI Watch Team"
+            
+            try:
+                send_mail(
+                    subject,
+                    message,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [email],
+                    fail_silently=True,
+                )
+            except Exception:
+                pass # Don't fail subscription if email fails
+
         return JsonResponse({'status': 'success', 'message': 'Subscribed successfully!'})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)})
